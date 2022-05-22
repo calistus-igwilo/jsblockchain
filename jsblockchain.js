@@ -15,3 +15,14 @@ class Block {
         return SHA256(this.index + this.timestamp + this.previoushash + JSON.stringify(this.data).toString);
     }
 }
+
+class Blockchain {
+    constructor() {
+        // the first variable of the array is the genesis block, created mannually
+        this.chain = [this.createGenesisBlock()];
+    }
+
+    createGenesisBlock() {
+        return new Block(0, "05/22/2022", "this is the genesis block", "0")
+    }
+}
