@@ -120,3 +120,9 @@ console.log("balance for jerry is: " + bittycoin.getBalanceOfAddress("jerry"));
 console.log(
     "balance of miner donald is: " + bittycoin.getBalanceOfAddress("donald")
 );
+
+console.log("started mining again by the miner");
+bittycoin.minePendingTransactions("donald");
+console.log(
+    "balance of miner donald is: " + bittycoin.getBalanceOfAddress("donald")
+);
