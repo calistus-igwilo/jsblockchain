@@ -1,10 +1,16 @@
 const SHA256 = require("crypto-js/sha256");
 
+class Transaction {
+    constructor(fromAddress, toAddress, amount) {
+        this.fromAddress = fromAddress;
+        this.toAddress = toAddress;
+        this.amount = amount;
+    }
+}
 class Block {
-    constructor(index, timestamp, data, previousHash = "") {
-        this.index = index;
+    constructor(timestamp, transactions, previousHash = "") {
         this.timestamp = timestamp;
-        this.data = data;
+        this.transactions = transactions;
         this.previoushash = previousHash;
         this.hash = this.calculateHash();
         this.nounce = 0;
@@ -13,10 +19,9 @@ class Block {
     calculateHash() {
         // Use SHA256 cryptographic function to generate the hash of this block
         return SHA256(
-            this.index +
             this.timestamp +
             this.previousHash +
-            JSON.stringify(this.data) +
+            JSON.stringify(this.transactions) +
             this.nounce
         ).toString();
     }
@@ -36,6 +41,8 @@ class Blockchain {
         // the first variable of the array is the genesis block, created mannually
         this.chain = [this.createGenesisBlock()];
         this.difficulty = 3;
+        this.pendingTransactions = [];
+        this.miningReward = 10;
     }
 
     createGenesisBlock() {
@@ -46,12 +53,40 @@ class Blockchain {
         return this.chain[this.chain.length - 1];
     }
 
-    addBlock(newBlock) {
-        newBlock.previousHash = this.getLatestBlock().hash; //get previous block hash
-        newBlock.mineNewBlock(this.difficulty); //mine new block
-        this.chain.push(newBlock); //add new block to the blockchain
+    minePendingTransactions(miningRewardAddress) {
+        let block = new Block(
+            Date.now(),
+            this.pendingTransactions,
+            this.getLatestBlock().hash
+        );
+        block.mineNewBlock(this.difficulty);
+        console.log("Block mined sucessfully");
+
+        this.chain.push(block);
+        this.pendingTransactions = [
+            new Transaction(null, miningRewardAddress, this.miningReward), //fromAddress is kept null for demo only. It should be the address to pay the miner
+        ];
     }
 
+    createTransaction(transaction) {
+        this.pendingTransactions.push(transaction);
+    }
+
+    getBalanceOfAddress(address) {
+        let balance = 0;
+
+        for (const block of this.chain) {
+            for (const trans of block.transactions) {
+                if (trans.fromAddress === address) {
+                    balance = balance - trans.amount;
+                }
+                if (trans.toAddress === address) {
+                    balance = balance + trans.amount;
+                }
+            }
+        }
+        return balance;
+    }
     checkBlockChainValid() {
         for (let i = 1; i < this.chain.length; i++) {
             const currentBlock = this.chain[i];
@@ -69,27 +104,19 @@ class Blockchain {
     }
 }
 
-// create 2 new blocks
-let block1 = new Block(1, "05/23/2022", { mybalance: 100 });
-let block2 = new Block(2, "05/24/2022", { mybalance: 50 });
+let bittycoin = new Blockchain();
 
-//create a new blockchain
-let myBlockChain = new Blockchain();
+let transaction1 = new Transaction("tom", "jerry", 100);
+bittycoin.createTransaction(transaction1);
 
-//add the new blocks to the blockchain
-console.log("first block creation");
-myBlockChain.addBlock(block1);
-console.log("second block creation");
-myBlockChain.addBlock(block2);
+let transaction2 = new Transaction("jerry", "tom", 30);
+bittycoin.createTransaction(transaction2);
 
-/* console.log(JSON.stringify(myBlockChain, null, 4));
+console.log("started mining by the miner");
+bittycoin.minePendingTransactions("donald");
+
+console.log("balance for tom is: " + bittycoin.getBalanceOfAddress("tom"));
+console.log("balance for jerry is: " + bittycoin.getBalanceOfAddress("jerry"));
 console.log(
-    "Validation check for Block Chain before hacking: " +
-    myBlockChain.checkBlockChainValid()
+    "balance of miner donald is: " + bittycoin.getBalanceOfAddress("donald")
 );
-
-myBlockChain.chain[1].data = { mybalance: 5000 }; // a hacker changes data on the blockchain
-console.log(
-    "Validation check for Block Chain after hacking: " +
-    myBlockChain.checkBlockChainValid()
-); */
